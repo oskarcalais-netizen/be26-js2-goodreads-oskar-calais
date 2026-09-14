@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="css/style.css" />
+
+    <script src="./main.js" type="module"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400..900&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Godreads</title>
+  </head>
+  <body>
+    <div class="header-container">
+      <h1><img src="img/Shiva_gold.png" /> GODREADS</h1>
+    </div>
+    <div class="action-container">
+      <button id="add-book-btn" class="btn-primary">add</button>
+    </div>
+
+    <main id="books-container" class="books-grid"></main>
+
+    <div id="book-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <div class="modal-body">
+          <div class="modal-cover-wrapper">
+            <img id="modal-cover" src="" alt="Book Cover Large" />
+          </div>
+          <div class="modal-info">
+            <h2 id="modal-title"></h2>
+            <p id="modal-author" class="modal-author"></p>
+            <p id="modal-year" class="modal-year"></p>
+
+            <div class="modal-synopsis-container">
+              <h4>Synopsis</h4>
+              <p id="modal-synopsis">Loading description...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

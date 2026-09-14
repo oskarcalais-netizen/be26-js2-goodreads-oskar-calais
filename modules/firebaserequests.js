@@ -1,0 +1,1 @@
+const baseUrl = 'https://be26-firebase-default-rtdb.europe-west1.firebasedatabase.app/godreads';
