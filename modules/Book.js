@@ -218,12 +218,23 @@ export class Book {
 
     // Listens for changes in 'Read' status and updates to Firebase
     readCheckbox.addEventListener("change", (e) => {
-      const isChecked = e.target.checked;
-      update(ref(db, `godreads/titles/${this.#id}`), {
-        isRead: this.#isRead,
-        score: this.#score
-      });
-    });
+  const isChecked = e.target.checked;
+  
+  // Updates internal value in class instance (run setter for class)
+  this.isRead = isChecked;
+
+  // Shows or hides star container directly in DOM
+  const scoreContainer = card.querySelector(".score-container");
+  if (scoreContainer) {
+    scoreContainer.classList.toggle("hidden", !isChecked);
+  }
+
+  // Sends updated value to Firebase
+  update(ref(db, `godreads/titles/${this.#id}`), {
+    isRead: this.#isRead,
+    score: this.#score
+  });
+});
 
     // Listens for changes in 'Score' status and updates to Firebase
     stars.forEach((star) => {
