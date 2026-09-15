@@ -7,7 +7,7 @@ const container = document.getElementById("books-container");
 const addBookBtn = document.getElementById("add-book-btn");
 
 addBookBtn.addEventListener("click", async () => {
-  const title = prompt("Enter title:");
+  let title = prompt("Enter title:");
   if (!title || !title.trim()) return;
 
   let author = prompt("Enter author (leave blank to auto-detect):");
