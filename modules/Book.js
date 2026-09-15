@@ -2,34 +2,101 @@ import { db } from "./firebaseconfig.js";
 import { fetchCoverIdFromOpenLibrary } from "./coverfetch.js";
 import { ref, update, remove } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
 
+// Book object constructor (made private with '#')
 export class Book {
+  #id;
+  #title;
+  #author;
+  #coverId;
+  #isbn;
+  #isRead;
+  #score;
+
   constructor(id, data) {
-    this.id = id;
-    this.title = data.title || "Unknown title";
-    this.author = data.author || "Unknown author";
-    this.coverId = data.coverId || null;
-    this.isbn = data.isbn || null;
-    this.isRead = data.isRead || false;
+    this.#id = id;
+    this.#title = data.title || "Unknown title";
+    this.#author = data.author || "Unknown author";
+    this.#coverId = data.coverId || null;
+    this.#isbn = data.isbn || null;
+    this.#isRead = data.isRead || false;
+
+    // Use setter for score
     this.score = data.score || 0;
   }
 
-  // Fetch big cover for modal
-  getLargeCoverUrl() {
-    if (this.coverId) {
-      return `https://covers.openlibrary.org/b/id/${this.coverId}-L.jpg`;
+  // --- GETTERS (Reading access) ---
+  get id() { return this.#id; }
+  get title() { return this.#title; }
+  get author() { return this.#author; }
+  get coverId() { return this.#coverId; }
+  get isbn() { return this.#isbn; }
+  get isRead() { return this.#isRead; }
+  get score() { return this.#score; }
+
+  // --- SETTERS (Writing access) ---
+  set title(newTitle) {
+    if (typeof newTitle === "string" && newTitle.trim() !== "") {
+      this.#title = newTitle.trim();
     }
-    if (this.isbn) {
-      return `https://covers.openlibrary.org/b/isbn/${this.isbn}-L.jpg`;
+  }
+
+  set author(newAuthor) {
+    if (typeof newAuthor === "string" && newAuthor.trim() !== "") {
+      this.#author = newAuthor.trim();
+    }
+  }
+
+  set coverId(newCoverId) {
+    this.#coverId = newCoverId;
+  }
+
+  set isRead(status) {
+    this.#isRead = Boolean(status);
+    // Resets score on toggling 'Read' to 'Unread'
+    if (!this.#isRead) {
+      this.#score = 0;
+    }
+  }
+
+  set score(newScore) {
+    const numericScore = Number(newScore);
+    // Validation: Permits only scores between 0 and 5
+    if (numericScore >= 0 && numericScore <= 5) {
+      this.#score = numericScore;
+    } else {
+      console.warn("Score must be between 0 and 5.");
+    }
+  }
+
+// Compiles constructor data for export to database
+  toFirebase() {
+    return {
+      title: this.#title,
+      author: this.#author,
+      coverId: this.#coverId,
+      isbn: this.#isbn,
+      isRead: this.#isRead,
+      score: this.#score
+    };
+  }
+
+  // Fetches big cover (L) for modal
+  getLargeCoverUrl() {
+    if (this.#coverId) {
+      return `https://covers.openlibrary.org/b/id/${this.#coverId}-L.jpg`;
+    }
+    if (this.#isbn) {
+      return `https://covers.openlibrary.org/b/isbn/${this.#isbn}-L.jpg`;
     }
     return "https://via.placeholder.com/300x450?text=No+Cover";
   }
 
   getCoverUrl() {
-    if (this.coverId) {
-      return `https://covers.openlibrary.org/b/id/${this.coverId}-M.jpg`;
+    if (this.#coverId) {
+      return `https://covers.openlibrary.org/b/id/${this.#coverId}-M.jpg`;
     }
-    if (this.isbn) {
-      return `https://covers.openlibrary.org/b/isbn/${this.isbn}-M.jpg`;
+    if (this.#isbn) {
+      return `https://covers.openlibrary.org/b/isbn/${this.#isbn}-M.jpg`;
     }
     return "https://via.placeholder.com/150x220?text=No+Cover";
   }
@@ -40,24 +107,24 @@ export class Book {
 
     card.innerHTML = `
       <div class="cover-wrapper" style="cursor: pointer;">
-        <img src="${this.getCoverUrl()}" alt="Cover for ${this.title}" class="book-cover" id="cover-${this.id}" />
+        <img src="${this.getCoverUrl()}" alt="Cover for ${this.#title}" class="book-cover" id="cover-${this.#id}" />
       </div>
       <div class="book-info">
-        <h3 class="clickable-title" style="cursor: pointer;">${this.title}</h3>
-        <p class="author">by ${this.author}</p>
+        <h3 class="clickable-title" style="cursor: pointer;">${this.#title}</h3>
+        <p class="author">by ${this.#author}</p>
         
         <div class="read-toggle">
           <label>
-            <input type="checkbox" class="toggle-read" ${this.isRead ? "checked" : ""} />
+            <input type="checkbox" class="toggle-read" ${this.#isRead ? "checked" : ""} />
             Read
           </label>
         </div>
 
-        <div class="score-container ${this.isRead ? "" : "hidden"}">
+        <div class="score-container ${this.#isRead ? "" : "hidden"}">
           <span class="score-title">Score:</span>
           <div class="stars">
             ${[1, 2, 3, 4, 5].map(star => `
-              <span class="star ${star <= this.score ? "active" : ""}" data-value="${star}">★</span>
+              <span class="star ${star <= this.#score ? "active" : ""}" data-value="${star}">★</span>
             `).join("")}
           </div>
         </div>
@@ -67,16 +134,16 @@ export class Book {
     `;
 
 // Async fetch for title formatting, cover, and author if missing/unformatted
-    if (this.title) {
-      fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(this.title)}`)
+    if (this.#title) {
+      fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(this.#title)}`)
         .then(res => res.json())
         .then(data => {
           if (data.docs && data.docs.length > 0) {
             const match = data.docs[0];
             const updates = {};
 
-            // Update and format title casing
-            if (match.title && match.title !== this.title) {
+            // Updates and formats title casing
+            if (match.title && match.title !== this.#title) {
               this.title = match.title;
               updates.title = match.title;
               const titleElement = card.querySelector(".clickable-title");
@@ -85,29 +152,29 @@ export class Book {
               }
             }
 
-            // Update cover if missing
-            if (!this.coverId && match.cover_i) {
+            // Updates cover if missing
+            if (!this.#coverId && match.cover_i) {
               this.coverId = match.cover_i;
               updates.coverId = match.cover_i;
-              const imgElement = card.querySelector(`[id="cover-${this.id}"]`);
+              const imgElement = card.querySelector(`[id="cover-${this.#id}"]`);
               if (imgElement) {
                 imgElement.src = `https://covers.openlibrary.org/b/id/${match.cover_i}-M.jpg`;
               }
             }
 
-            // Update author if unknown
-            if (this.author === "Unknown author" && match.author_name && match.author_name.length > 0) {
+            // Updates author if unknown
+            if (this.#author === "Unknown author" && match.author_name && match.author_name.length > 0) {
               this.author = match.author_name[0];
-              updates.author = this.author;
+              updates.author = this.#author;
               const authorElement = card.querySelector(".author");
               if (authorElement) {
-                authorElement.textContent = `by ${this.author}`;
+                authorElement.textContent = `by ${this.#author}`;
               }
             }
 
-            // Sync updates back to Firebase
+            // Syncs updates back to Firebase
             if (Object.keys(updates).length > 0) {
-              update(ref(db, `godreads/titles/${this.id}`), updates);
+              update(ref(db, `godreads/titles/${this.#id}`), updates);
             }
           }
         })
@@ -120,16 +187,17 @@ export class Book {
 
   // Deletes the book entry from Firebase Database
   async deleteBook() {
-    const confirmDelete = confirm(`Are you sure you want to remove "${this.title}"?`);
+    const confirmDelete = confirm(`Are you sure you want to remove "${this.#title}"?`);
     if (confirmDelete) {
       try {
-        await remove(ref(db, `godreads/titles/${this.id}`));
+        await remove(ref(db, `godreads/titles/${this.#id}`));
       } catch (error) {
         console.error("Error deleting title from Firebase:", error);
       }
     }
   }
 
+  // Connects interactive functions to Book card
   attachEventListeners(card) {
     const readCheckbox = card.querySelector(".toggle-read");
     const stars = card.querySelectorAll(".star");
@@ -137,36 +205,40 @@ export class Book {
     const titleElement = card.querySelector(".clickable-title");
     const removeBtn = card.querySelector(".card-remove-btn");
 
-    // Open modal
+    // Opens modal
     const openModalHandler = () => this.openModal();
     coverWrapper.addEventListener("click", openModalHandler);
     titleElement.addEventListener("click", openModalHandler);
 
-    // Remove book from card button
+    // Removes book from card button
     removeBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       this.deleteBook();
     });
 
+    // Listens for changes in 'Read' status and updates to Firebase
     readCheckbox.addEventListener("change", (e) => {
       const isChecked = e.target.checked;
-      update(ref(db, `godreads/titles/${this.id}`), {
-        isRead: isChecked,
-        score: isChecked ? this.score : 0
+      update(ref(db, `godreads/titles/${this.#id}`), {
+        isRead: this.#isRead,
+        score: this.#score
       });
     });
 
+    // Listens for changes in 'Score' status and updates to Firebase
     stars.forEach((star) => {
       star.addEventListener("click", (e) => {
-        if (!readCheckbox.checked) return;
+        if (!this.#isRead) return;
         const selectedScore = Number(e.target.dataset.value);
-        update(ref(db, `godreads/titles/${this.id}`), {
-          score: selectedScore
+        this.score = selectedScore; // Använder setter
+        update(ref(db, `godreads/titles/${this.#id}`), {
+          score: this.#score
         });
       });
     });
   }
 
+  // Edits synopsis text to remove unwanted artifacts
   cleanSynopsis(text) {
     if (!text) return "No synopsis available for this title.";
     return text
@@ -203,8 +275,8 @@ export class Book {
 
     // Current data
     modalCover.src = this.getLargeCoverUrl();
-    modalTitle.textContent = this.title;
-    modalAuthor.textContent = `by ${this.author}`;
+    modalTitle.textContent = this.#title;
+    modalAuthor.textContent = `by ${this.#author}`;
     modalYear.textContent = "First published: Loading...";
     modalSynopsis.textContent = "Loading description...";
 
@@ -218,7 +290,7 @@ export class Book {
 
     // Detailed info
     try {
-      const response = await fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(this.title)}`);
+      const response = await fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(this.#title)}`);
       const data = await response.json();
 
       if (data.docs && data.docs.length > 0) {

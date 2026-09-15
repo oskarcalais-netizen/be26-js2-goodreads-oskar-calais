@@ -6,7 +6,7 @@
  */
 export async function fetchCoverIdFromOpenLibrary(title, author = "") {
   try {
-    // Search by title primarily for higher hit rate
+    // Searches by title primarily for higher hit rate
     const response = await fetch(
       `https://openlibrary.org/search.json?title=${encodeURIComponent(title.trim())}`
     );
@@ -18,7 +18,7 @@ export async function fetchCoverIdFromOpenLibrary(title, author = "") {
     const data = await response.json();
 
     if (data.docs && data.docs.length > 0) {
-      // Find the first doc that contains a cover_i property
+      // Finds the first doc that contains a cover_i property
       const bookWithCover = data.docs.find((doc) => doc.cover_i);
       return bookWithCover ? bookWithCover.cover_i : null;
     }

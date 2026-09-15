@@ -2,23 +2,23 @@
 
 1. Konfiguration & initiering
 
-När applikationen laddas körs firebaseconfig.js. Firebase-appen initieras med dina nycklar och databasinstansen db exporteras för användning i övriga moduler.
+När applikationen laddas körs firebaseconfig.js. Firebase-appen initieras med nycklar och databasinstansen 'db' exporteras för användning i övriga moduler.
 
 2. Realtidslyssnare startar (main.js)
 
-I main.js sätts en onValue-lyssnare mot mappen godreads/titles i Firebase Realtime Database.
+I main.js sätts en onValue-lyssnare mot mappen '..godreads/titles' i Firebase Realtime Database.
 
 3. Instansiering & rendering av kort (Book.js)
 
 När databasen returnerar böcker rensas containern i DOM-trädet. För varje bok-ID instansieras ett nytt objekt via new Book(bookId, data) och dess render()-metod genererar HTML-kortet.
 
-4. Automatisk datakomplettering & tvätt (Book.js)
+4. Automatisk datakomplettering & textkorrigering (Book.js)
 
 I render() görs ett bakgrundsanrop (fetch) mot Open Library API för att verifiera/korrigera bokens titel, hämta saknat författarnamn eller omslags-ID. Hittas ny information uppdateras kortet i DOM och ändringarna sparas direkt till Firebase med update().
 
 5. Skapa ny bok (main.js & coverfetch.js)
 
-När användaren klickar på "Add book" öppnas promptar. main.js gör en sökning mot Open Library för att hämta officiell titel, författare samt omslags-ID. Datan sparas till Firebase med push(), vilket automatiskt triggar onValue att rita om listan.
+När användaren klickar på "Add book" öppnas två promptar; 'Enter title' samt 'Enter author (leave blank to auto-detect)'. main.js gör en sökning mot Open Library för att hämta officiell titel, författare samt omslags-ID. Datan sparas till Firebase med push(), vilket automatiskt triggar onValue att rendera om listan.
 
 6. Interaktioner på kortet (Book.js)
 
@@ -28,11 +28,15 @@ När användaren klickar på "Add book" öppnas promptar. main.js gör en sökni
 
 7. Modalvy & detaljhämtning (Book.js)
 
-Klick på titel eller omslag öppnar modalen. openModal() sätter direkt grunddata och gör sedan ytterligare två fetch-anrop mot Open Library (Search API & Works API) för att hämta utgivningsår och synopsis. Synopsis tvättas med cleanSynopsis() innan den visas.
+Klick på titel eller omslag öppnar modalen. openModal() sätter grunddata och gör sedan ytterligare två fetch-anrop mot Open Library (Search API & Works API) för att hämta utgivningsår och synopsis. Synopsis "tvättas" (plockar bort textsträngen "--Cover" som annars följer med från Open Library) med cleanSynopsis() innan den visas.
 
 **\_\_\_\_** MAIN.JS **\_\_\_\_**
 
-Lyssnar på ändringar med onValue() och lägger till nya poster med push(), samt kör fetch() mot search.json vid skapande av bok för att auto-korrigera titel/författare.
+    Importerar funktionalitet från övriga .js-moduler.
+    
+    Renderar 'add'-knapp där användaren kan lägga till böcker i listan, vilken utifrån prompt söker på böcker och författare i Open Library-API:et.
+    
+    Lyssnar på ändringar med onValue() och lägger till nya poster med push(), samt kör fetch() mot search.json vid skapande av bok för att autokorrigera titel/författare.
 
 **\_\_\_\_** MODULER **\_\_\_\_**
 

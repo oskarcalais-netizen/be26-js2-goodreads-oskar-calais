@@ -35,6 +35,7 @@ addBookBtn.addEventListener("click", async () => {
         author = topMatch.author_name[0];
       }
 
+    //   Matches title and author with cover ID
       if (topMatch.cover_i) {
         coverId = topMatch.cover_i;
       }
@@ -48,17 +49,19 @@ addBookBtn.addEventListener("click", async () => {
     detectedAuthor = "Unknown author";
   }
 
-  // Save to Firebase Realtime Database
-  const titlesRef = ref(db, "godreads/titles");
-  await push(titlesRef, {
-    title: title,
-    author: author,
-    coverId: coverId || null,
-    isRead: false,
-    score: 0
+  // Creates an instance based on Book.js constructor
+  const newBook = new Book(null, {
+    title,
+    author: author || detectedAuthor,
+    coverId
   });
+
+  // Exports to Firebase Realtime Database through instance
+  const titlesRef = ref(db, "godreads/titles");
+  await push(titlesRef, newBook.toFirebase());
 });
 
+// Listens to database and renders books as objects i real time
 const titlesRef = ref(db, "godreads/titles");
 onValue(titlesRef, (snapshot) => {
   const data = snapshot.val();
@@ -68,7 +71,7 @@ onValue(titlesRef, (snapshot) => {
     container.innerHTML = "<p>No books found.</p>";
     return;
   }
-
+// Renders cards in HTML
   Object.keys(data).forEach((bookId) => {
     const book = new Book(bookId, data[bookId]);
     container.appendChild(book.render());
