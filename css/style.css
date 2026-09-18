@@ -5,7 +5,7 @@
     --darkgold: #281c02;
     --darkred: #4b0304;
     --mediumred: #7f0000;
-    --headerheight: 50px;
+    --headerheight: min(50px, 10vw);
 }
 
 .cinzel-decorative-regular {
@@ -158,9 +158,9 @@ h1 img {
   color: var(--peach);
   border: 0.5px solid var(--darkgold);
   border-radius: 8px;
-  padding: 4px 6px;
+  padding: 7px 9px;
   font-family: "Josefin Sans", sans-serif;
-  font-size: 1.75em;
+  font-size: 2em;
   font-weight: bold;
   -webkit-font-smoothing: antialiased;
     -webkit-text-stroke: 1px var(--darkgold);
