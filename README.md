@@ -1,55 +1,76 @@
-**\_\_\_\_** EXEKVERINGSFLÖDE **\_\_\_\_**
+\_**\_ GODREADS \_\_**
 
-1. Konfiguration & initiering
+Appen är en inlämningsuppgift i kursen Javascvript 2 för Backend-utbildningen på Grit Academy. Uppgiften består i att skapa en egen version av "Goodreads" där en lista över böcker visas. Böcker ska kunna läggas till, togglas som "Lästa", betygsättas samt tas bort.
 
-När applikationen laddas körs firebaseconfig.js. Firebase-appen initieras med nycklar och databasinstansen 'db' exporteras för användning i övriga moduler.
+FRD (Firebase Realtime Database) med dess REST-API har använts, och varje bok innehåller nycklar och värden såsom _title_, _author_, _isRead_, _score_ etc.
 
-2. Realtidslyssnare startar (main.js)
+Objektorienterad (OOP-) programmering har använts (t.ex. renderas objekt utifrån en konstruktor), samt säkerhetsinkapsling (Encapsulation).
 
-I main.js sätts en onValue-lyssnare mot mappen '..godreads/titles' i Firebase Realtime Database.
+Webbapplikationen bundlas med Vite och deployas med Netflify.
+
+\_**\_ EXEKVERINGSFLÖDE \_\_**
+
+1. Initiering och laddning (main.js)
+
+När applikationen laddas i webbläsaren anropas `loadAndRenderBooks()` i `main.js`. Denna funktion hämtar befintliga böcker från Firebase via REST API och renderar ut dem på sidan.
+
+2. Hämtning från databasen (api.js)
+
+Hämtningen sker genom att `fetchAllBooksFromDb()` kör ett `GET`-anrop mot Firebase Realtime Database REST API. Den returnerade datan omvandlas till bokobjekt.
 
 3. Instansiering & rendering av kort (Book.js)
 
-När databasen returnerar böcker rensas containern i DOM-trädet. För varje bok-ID instansieras ett nytt objekt via new Book(bookId, data) och dess render()-metod genererar HTML-kortet.
+För varje bok-ID som returneras instansieras ett objekt via `new Book(bookId, data, loadAndRenderBooks)`. Dess privata `#render()`-flöde och metoder genererar HTML-kortet samt sätter upp interna eventlyssnare.
 
-4. Automatisk datakomplettering & textkorrigering (Book.js)
+4. Automatisk datakomplettering (Book.js & bookService.js)
 
-I render() görs ett bakgrundsanrop (fetch) mot Open Library API för att verifiera/korrigera bokens titel, hämta saknat författarnamn eller omslags-ID. Hittas ny information uppdateras kortet i DOM och ändringarna sparas direkt till Firebase med update().
+Under renderingen körs den privata metoden `#syncMissingDetails()` som anropar `bookService.js`. Om titeln saknar omslag, exakt titelformatering eller författare görs en sökning mot Open Library API. Hittas ny information uppdateras DOM-elementen och ändringarna sparas till Firebase med ett `PATCH`-anrop via `api.js`.
 
-5. Skapa ny bok (main.js & coverfetch.js)
+5. Skapa ny bok (main.js, bookService.js & api.js)
 
-När användaren klickar på "Add book" öppnas två promptar; 'Enter title' samt 'Enter author (leave blank to auto-detect)'. main.js gör en sökning mot Open Library för att hämta officiell titel, författare samt omslags-ID. Datan sparas till Firebase med push(), vilket automatiskt triggar onValue att rendera om listan.
+När användaren klickar på "Add book" öppnas två promptar för titel och författare. `handleAddBook()` i `main.js` anropar `searchOpenLibrary()` för att hämta officiell titel, författare samt omslags-ID. Därefter skapas en ny `Book`-instans och sparas till Firebase via `saveBookToDb()` (`POST`-anrop). Slutligen återrenderas listan i UI.
 
-6. Interaktioner på kortet (Book.js)
+6. Interaktioner på kortet (Book.js & api.js)
 
-   ○ Betyg & Läst-status: Ändringar i checkboxen eller stjärnorna skickar direkt en update() till Firebase.
+   ○ Betyg & Läst-status: Ändringar i checkboxen eller stjärnorna hanteras av de privata metoderna `#handleReadStatusToggle()` och `#handleScoreChange()`, som skickar ett `PATCH`-anrop (`updateBookInDb`) till Firebase.
 
-   ○ Radera: Klick på "Remove" triggar deleteBook(), vilket kör remove() mot Firebase och raderar boken.
+   ○ Radera: Klick på "Remove" triggar den privata metoden `#deleteBook()`, som kör ett `DELETE`-anrop (`deleteBookFromDb`) mot Firebase och anropar callback-funktionen för att uppdatera vyn.
 
-7. Modalvy & detaljhämtning (Book.js)
+7. Modalvy & detaljhämtning (modal.js & bookService.js)
 
-Klick på titel eller omslag öppnar modalen. openModal() sätter grunddata och gör sedan ytterligare två fetch-anrop mot Open Library (Search API & Works API) för att hämta utgivningsår och synopsis. Synopsis "tvättas" (plockar bort textsträngen "--Cover" som annars följer med från Open Library) med cleanSynopsis() innan den visas.
+Klick på en boks titel eller omslag anropar `displayBookModal()` i `modal.js`. Modalen öppnas och visar direkt den information som redan finns. Därefter hämtas utgivningsår och synopsis i bakgrunden via `bookService.js` (Search API & Works API). Beskrivningen rensas från oönskade tecken/formateringar i `sanitizeDescription()` innan den visas.
 
-**\_\_\_\_** MAIN.JS **\_\_\_\_**
+\_**\_ MAIN.JS \_\_**
 
-    Importerar funktionalitet från övriga .js-moduler.
-    
-    Renderar 'add'-knapp där användaren kan lägga till böcker i listan, vilken utifrån prompt söker på böcker och författare i Open Library-API:et.
-    
-    Lyssnar på ändringar med onValue() och lägger till nya poster med push(), samt kör fetch() mot search.json vid skapande av bok för att autokorrigera titel/författare.
+    Fungerar som applikationens startpunkt; kopplas mot index.html och binder ihop övriga moduler.
 
-**\_\_\_\_** MODULER **\_\_\_\_**
+    Hanterar användarinteraktion för att lägga till nya böcker via promptar.
 
-■ firebaseconfig.js:
-Initierar Firebase med initializeApp() och getDatabase() och exporterar databasinstansen (db)
+    Initierar laddning av alla böcker vid start och styr omrendering av vyn när datastrukturen förändras.
 
-■ firebaserequests.js:
-Innehåller bas-URL till Firebase Realtime Database (godreads).
+\_**\_ MODULER \_\_**
 
-■ coverfetch.js:
-Hjälpmodul som söker upp och returnerar ett omslags-ID (cover_i) från Open Library utifrån titel och författare.
+■ api.js:
+Hanterar all direkt kommunikation med Firebase Realtime Database via HTTP-anrop (GET, POST, PATCH, DELETE) med standarden `fetch`.
+
+■ bookService.js:
+Dedikerad modul för integration mot Open Library API. Innehåller funktioner för att söka efter bokdetaljer, hämta synopsis baserat på en nyckel (workKey) samt korrigera beskrivningstexten.
+
+■ modal.js:
+Hanterar allt som rör visning, stängning och uppdatering av innehåll i detaljmodalen.
 
 ■ Book.js:
-Huvudmodul för OOP-struktur. Skapar instanser av böcker, genererar card-HTML (render), hantera eventlyssnare, textkorrigerar API-data (cleanSynopsis), öppnar/fyller modalen med fördjupad fakta samt synkar ändringar/borttagningar mot Firebase.
+Modul för OOP-strukturen kring böcker. Tillämpar inkapsling genom privata fält (#id, #title, etc.) och privata metoder för interaktionshantering (#attachEventListeners, #handleReadStatusToggle, #deleteBook m.fl.). Ansvarar för generering av boken som DOM-element och dess lokala tillstånd.
 
-    Kör även fetch() mot search.json i render() för datakomplettering, samt i openModal() mot både search.json och [https://openlibrary.org/works/...json](https://openlibrary.org/works/...json) för att hämta utgivningsår och synopsis.
+\_**\_ ENCAPSULATION (INKAPSLING & SÄKERHET) \_\_**
+
+I `Book.js` tillämpas inkapsling genom användning av privata instansvariabler och metoder (identifieras med `#`-prefixet, t.ex. `#id`, `#title`, `#deleteBook()`).
+
+Objektets interna tillstånd och logik skyddas därigenom från manipulering utifrån. Utomstående skript eller moduler kan inte av misstag ändra interna värden eller anropa känsliga metoder direkt på klassinstansen.
+
+\_**\_ GETTERS OCH SETTERS \_\_**
+
+Kontrollerar hur objektets privata egenskaper läses och modifieras i `Book`-klassen:
+
+■ GETTERS (`get`): Ger läsrättighet till privata fält utifrån utan att exponera variablerna direkt (t.ex. `book.title` returnerar värdet av `#title`).
+■ SETTERS (`set`): Säkerställer datavalidering vid skrivning; kontrollerar olika aspekter av variabler innan ett nytt värde tilldelas (för t.ex.`score` måste betyget vara ett nummer mellan 0 och 5).

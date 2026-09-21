@@ -1,79 +1,59 @@
-import { db } from "./modules/firebaseconfig.js";
-import { fetchCoverIdFromOpenLibrary } from "./modules/coverfetch.js";
+import { fetchAllBooksFromDb, saveBookToDb } from "./modules/api.js";
+import { searchOpenLibrary } from "./modules/bookService.js";
 import { Book } from "./modules/Book.js";
-import { ref, onValue, push } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
 
 const container = document.getElementById("books-container");
 const addBookBtn = document.getElementById("add-book-btn");
 
-addBookBtn.addEventListener("click", async () => {
-  let title = prompt("Enter title:");
-  if (!title || !title.trim()) return;
+addBookBtn.addEventListener("click", handleAddBook);
 
-  let author = prompt("Enter author (leave blank to auto-detect):");
-  author = author ? author.trim() : "";
-
-  let coverId = null;
-  let detectedAuthor = author;
-
+async function loadAndRenderBooks() {
   try {
-    // Search Open Library for title and author details
-    const searchQuery = author ? `${title} ${author}` : title;
-    const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(searchQuery)}`);
-    const data = await response.json();
+    const data = await fetchAllBooksFromDb();
+    container.innerHTML = "";
 
-    if (data.docs && data.docs.length > 0) {
-      const topMatch = data.docs[0];
-
-      // Format title using official API capitalization
-      if (topMatch.title) {
-        title = topMatch.title;
-      }
-
-      // Auto-detect or format author
-      if (topMatch.author_name && topMatch.author_name.length > 0) {
-        author = topMatch.author_name[0];
-      }
-
-    //   Matches title and author with cover ID
-      if (topMatch.cover_i) {
-        coverId = topMatch.cover_i;
-      }
+    if (!data) {
+      container.innerHTML = "<p>No books found.</p>";
+      return;
     }
+
+    Object.keys(data).forEach((bookId) => {
+      const book = new Book(bookId, data[bookId], loadAndRenderBooks);
+      container.appendChild(book.render());
+    });
   } catch (error) {
-    console.error("Error auto-detecting book details:", error);
+    console.error("Error loading books:", error);
+    container.innerHTML = "<p>Failed to load books.</p>";
+  }
+}
+
+async function handleAddBook() {
+  const titleInput = prompt("Enter title:");
+  if (!titleInput || !titleInput.trim()) return;
+
+  const authorInput = prompt("Enter author (leave blank to auto-detect):");
+  const author = authorInput ? authorInput.trim() : "";
+
+  let title = titleInput.trim();
+  let detectedAuthor = author;
+  let coverId = null;
+
+  const searchData = await searchOpenLibrary(title, author);
+  if (searchData) {
+    title = searchData.title;
+    if (!detectedAuthor) detectedAuthor = searchData.author;
+    coverId = searchData.coverId;
   }
 
-  // Fallback if no author was entered and none was found
-  if (!detectedAuthor) {
-    detectedAuthor = "Unknown author";
-  }
-
-  // Creates an instance based on Book.js constructor
   const newBook = new Book(null, {
     title,
-    author: author || detectedAuthor,
+    author: detectedAuthor || "Unknown author",
     coverId
   });
 
-  // Exports to Firebase Realtime Database through instance
-  const titlesRef = ref(db, "godreads/titles");
-  await push(titlesRef, newBook.toFirebase());
-});
+  await saveBookToDb(newBook.toDatabaseObject());
+  await loadAndRenderBooks();
+}
 
-// Listens to database and renders books as objects i real time
-const titlesRef = ref(db, "godreads/titles");
-onValue(titlesRef, (snapshot) => {
-  const data = snapshot.val();
-  container.innerHTML = "";
-
-  if (!data) {
-    container.innerHTML = "<p>No books found.</p>";
-    return;
-  }
-// Renders cards in HTML
-  Object.keys(data).forEach((bookId) => {
-    const book = new Book(bookId, data[bookId]);
-    container.appendChild(book.render());
-  });
-});
+// Initial application setup
+loadAndRenderBooks();
