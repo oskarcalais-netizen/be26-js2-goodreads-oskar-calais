@@ -8,14 +8,17 @@ export async function displayBookModal(book, onDeleteCallback) {
   const modalYear = document.getElementById("modal-year");
   const modalSynopsis = document.getElementById("modal-synopsis");
   const closeBtn = modal.querySelector(".close-modal");
+  const modalInfo = modal.querySelector(".modal-info");
 
-  let removeBtn = modal.querySelector(".modal-remove-btn");
-  if (!removeBtn) {
-    removeBtn = document.createElement("button");
-    removeBtn.className = "btn-remove modal-remove-btn";
-    removeBtn.textContent = "Remove Title";
-    modal.querySelector(".modal-info").appendChild(removeBtn);
+  const existingRemoveBtn = modalInfo.querySelector(".modal-remove-btn");
+  if (existingRemoveBtn) {
+    existingRemoveBtn.remove();
   }
+
+  const removeBtn = document.createElement("button");
+  removeBtn.className = "btn-remove modal-remove-btn";
+  removeBtn.textContent = "Remove Title";
+  modalInfo.appendChild(removeBtn);
 
   modalCover.src = book.getLargeCoverUrl();
   modalTitle.textContent = book.title;
@@ -35,7 +38,7 @@ export async function displayBookModal(book, onDeleteCallback) {
   };
 
   modal.classList.remove("hidden");
-
+ 
   const searchData = await searchOpenLibrary(book.title, book.author);
   if (searchData) {
     modalYear.textContent = `First published: ${searchData.publishYear}`;

@@ -137,20 +137,38 @@ export class Book {
     });
 
     readCheckbox.addEventListener("change", (e) => this.#handleReadStatusToggle(e, card));
-    stars.forEach(star => star.addEventListener("click", (e) => this.#handleScoreChange(e)));
+    stars.forEach(star => star.addEventListener("click", (e) => this.#handleScoreChange(e, card)));
   }
 
   async #handleReadStatusToggle(event, card) {
     this.isRead = event.target.checked;
+
+    if (!this.#isRead) {
+    const stars = card.querySelectorAll(".star");
+    stars.forEach(star => star.classList.remove("active"));
+    }
+
     const scoreContainer = card.querySelector(".score-container");
     if (scoreContainer) scoreContainer.classList.toggle("hidden", !this.#isRead);
 
     await updateBookInDb(this.#id, { isRead: this.#isRead, score: this.#score });
   }
 
-  async #handleScoreChange(event) {
+  async #handleScoreChange(event, card) {
     if (!this.#isRead) return;
-    this.score = Number(event.target.dataset.value);
+
+    const newScore = Number(event.target.dataset.value);
+    this.score = newScore;
+
+    const stars = card.querySelectorAll(".star");
+  stars.forEach(star => {
+    const starValue = Number(star.dataset.value);
+    if (starValue <= this.score) {
+      star.classList.add("active");
+    } else {
+      star.classList.remove("active");
+    }
+  });
     await updateBookInDb(this.#id, { score: this.#score });
   }
 
