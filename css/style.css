@@ -17,11 +17,12 @@
 body {
     background-color: var(--peach);
     width: 100vw;
+    height: 100vh;
     background-image: url("../img/Mountains_gold.png");
-    background-size: cover;
+    background-size: fixed;
     background-repeat: no-repeat;
     background-position-x: center;
-    background-position-y: 25vh;
+    background-position-y: 5vh;
     background-blend-mode: normal;
     image-rendering: smooth;
     opacity: 98%;
