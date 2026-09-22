@@ -4,6 +4,8 @@ Appen är en inlämningsuppgift i kursen Javascvript 2 för Backend-utbildningen
 
 FRD (Firebase Realtime Database) med dess REST-API har använts, och varje bok innehåller nycklar och värden såsom _title_, _author_, _isRead_, _score_ etc.
 
+Utöver detta hämtas även omslag (_coverId_) samt synopsis (_workDescription_) via funktioner som _getCoverUrl()_ och _fetchWorkDescription()_. Bokomslaget visas i liten version (M) i korten och i större version (L) tillsammans med synopsis i modalen.
+
 Objektorienterad (OOP-) programmering har använts (t.ex. renderas objekt utifrån en konstruktor), samt säkerhetsinkapsling (Encapsulation).
 
 Webbapplikationen bundlas med Vite och deployas med Netflify.

@@ -21,7 +21,7 @@ export async function displayBookModal(book, onDeleteCallback) {
   modalTitle.textContent = book.title;
   modalAuthor.textContent = `by ${book.author}`;
   modalYear.textContent = "First published: Loading...";
-  modalSynopsis.textContent = "Loading description...";
+  modalSynopsis.textContent = "Loading synopsis...";
 
   removeBtn.onclick = async () => {
     const deleted = await onDeleteCallback();
@@ -42,7 +42,7 @@ export async function displayBookModal(book, onDeleteCallback) {
     if (searchData.workKey) {
       modalSynopsis.textContent = await fetchWorkDescription(searchData.workKey);
     } else {
-      modalSynopsis.textContent = "No description available.";
+      modalSynopsis.textContent = "No synopsis available.";
     }
   } else {
     modalYear.textContent = "First published: Unknown";

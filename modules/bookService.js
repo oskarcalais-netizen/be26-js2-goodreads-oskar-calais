@@ -24,22 +24,22 @@ export async function searchOpenLibrary(title, author = "") {
 export async function fetchWorkDescription(workKey) {
   try {
     const response = await fetch(`https://openlibrary.org${workKey}.json`);
-    if (!response.ok) return "No description available.";
+    if (!response.ok) return "No synopsis available.";
 
     const data = await response.json();
-    if (!data.description) return "No description available.";
+    if (!data.description) return "No synopsis available.";
 
     const rawDescription = typeof data.description === "object" ? data.description.value : data.description;
     return sanitizeDescription(rawDescription);
   } catch (error) {
-    console.error("Failed to fetch work description:", error);
-    return "Could not load description.";
+    console.error("Failed to fetch synopsis:", error);
+    return "Could not load synopsis.";
   }
 }
 
 // Removes trailing artifact text "--Cover" from synopsis
 function sanitizeDescription(text) {
-  if (!text) return "No description available.";
+  if (!text) return "No synopsis available.";
   return text
     .trim()
     .replace(/--\s*cover\s*$/i, "")
